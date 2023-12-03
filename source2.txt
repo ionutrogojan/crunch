@@ -1,0 +1,23 @@
+@import "lexer, std/io, std/string"
+
+@define BUFFER_SIZE 8192 // 8KB buffer size
+
+i8 main(void) {
+	string sourceName = env[1]
+	FILE *sourceFile
+
+	// "rb" for reading in binary mode
+	if ((sourceFile = fOpen(sourceName, "rb")) == nil) {
+		printLn("Unable to open %s file", sourceName)
+		return 1
+	}
+
+	char buffer[..BUFFER_SIZE]
+	// Read the file 8KB at a time until the end
+	while ((buffer.len = fRead(buffer, 1, BUFFER_SIZE, sourceFile)) > 0) {
+		parseBuffer(buffer)
+	}
+
+	fClose(sourceFile)
+	return 0
+}

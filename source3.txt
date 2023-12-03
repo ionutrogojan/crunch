@@ -1,0 +1,57 @@
+@import "std/io"
+
+void printS(const char c, const string name) {
+	printLn("%s '%c'", name, c)
+}
+
+void parseBuffer(const string* sourceCode) {
+	char currentChar = '\0'
+
+	usize start = 0
+
+	for (usize i = 0; i < sourceCode.len; ++i) {
+		currentChar = sourceCode[i]
+
+		if (isSkip(currentChar))
+			continue
+
+		match (currentChar) {
+			'(':
+				printS(currentChar, "ParenLeft")
+				continue
+			')':
+				printS(currentChar, "ParenRight")
+				continue
+			'[':
+				printS(currentChar, "BracketLeft")
+				continue
+			']':
+				printS(currentChar, "BracketRight")
+				continue
+			'{':
+				printS(currentChar, "CurlyLeft")
+				continue
+			'}':
+				printS(currentChar, "CurlyRight")
+				continue
+		}
+	}
+}
+
+bool isSkip(const char c) {
+	if ((c ==  ' ') || (c == '\n') || (c == '\t') || (c == '\r'))
+		return true
+	return false
+}
+
+bool isNumber(const char c) {
+	if ((c >= '0') && (c <= '9'))
+		return true
+	return false
+}
+
+bool isAlpha(const char c) {
+	if ((c >= 'a'&& c <= 'z') || (c >= 'A'&& c <= 'Z'))
+		return true
+	return false
+}

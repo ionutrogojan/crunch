@@ -1,0 +1,4 @@
+i8 foo = 10;
+f32
+
+char test = '\0'
