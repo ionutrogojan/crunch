@@ -17,6 +17,10 @@ int main(int argc, char **argv) {
 
 	char buffer[BUFFER_SIZE];
 	// Read the file 8KB at a time until the end
+	
+	// SourceBuffer buffer;
+	
+	
 	size_t bytes_read;
 	while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, sourceFile)) > 0) {
 		parseBuffer(buffer, bytes_read);

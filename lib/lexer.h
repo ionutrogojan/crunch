@@ -50,13 +50,19 @@ typedef enum {
 	CHAR_UNKNOWN,
 } charType;
 
+typedef struct {
+	size_t i;
+	size_t len;
+	const char *source;
+} SourceBuffer;
+
 int isSkip(const char c);
 
 int isNumber(const char c);
 
 int isAlpha(const char c);
 
-void parseBuffer(const char *sourceCode, size_t sourceLength);
+void parseBuffer(SourceBuffer *sourceCode);
 
 // sniff ahead for expected values
 int sniff(const char* sourceCode, size_t position, size_t sourceLength);

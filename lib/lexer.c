@@ -17,20 +17,20 @@ void printS(const char s, const char* name) {
 	printf("%s '%c'\n", name, s);
 }
 
-void parseBuffer(const char *sourceCode, size_t sourceLength) {
+void parseBuffer(SourceBuffer *buffer) {
 	char currentChar = '\0';
-
+	
 	size_t start = 0;
-	for (size_t i = 0; i < sourceLength; ++i) {
+	for (buffer->i = 0; buffer->i < buffer->len; buffer->i++) {
 
-		currentChar = sourceCode[i];
+		currentChar = buffer->source[buffer->i];
 
 		if (isSkip(currentChar) == 1)
 			continue;
 
-		switch (sourceCode[i]) {
+		switch (currentChar) {
 			case '(':
-				printS(sourceCode[i], "ParenLeft");
+				printS(currentChar, "ParenLeft");
 				continue;
 			case ')':
 				printS(sourceCode[i], "ParenRight");
@@ -243,7 +243,7 @@ int isNumber(const char c) {
 }
 
 int isAlpha(const char c) {
-	if ((c >= 'a'&& c <= 'z') || (c >= 'A'&& c <= 'Z'))
+	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
 		return 1;
 	return 0;
 }

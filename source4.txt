@@ -1,0 +1,15 @@
+// anonymous types to define types
+
+/*
+do I used an empty type? or, do I use self keyword?
+*/
+
+struct string {
+	char*,
+	usize len,
+}
+
+struct string {
+	char* self,
+	usize len,
+}
