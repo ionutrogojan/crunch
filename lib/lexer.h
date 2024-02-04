@@ -1,9 +1,9 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <stddef.h>
-#include <string.h>
 #include <stdio.h>
+
+#define BUFFER_SIZE 8192 // 8KB buffer size
 
 typedef enum {
 	TOKEN_EOF, // END OF FILE
@@ -42,29 +42,23 @@ typedef struct {
 	size_t len;
 } token;
 
-typedef enum {
-	CHAR_SKIP,
-	CHAR_SYMBOL,
-	CHAR_ALPHA,
-	CHAR_NUMBER,
-	CHAR_UNKNOWN,
-} charType;
-
 typedef struct {
-	size_t i;
-	size_t len;
-	const char *source;
-} SourceBuffer;
+    size_t index;
+    size_t length;
+    char data[BUFFER_SIZE];
+} Buffer;
 
-int isSkip(const char c);
+void tokenizeBuffer(Buffer *buffer);
+char tokenNext(Buffer *buffer);
+char tokenHere(Buffer *buffer); 
 
-int isNumber(const char c);
+int sniffToken(Buffer *buffer, const char c);
 
-int isAlpha(const char c);
+int checkToken(Buffer *buffer, const char c);
+int checkNumber(Buffer *buffer);
+int checkSkip(Buffer *buffer);
+int checkAlpha(Buffer *buffer);
 
-void parseBuffer(SourceBuffer *sourceCode);
-
-// sniff ahead for expected values
-int sniff(const char* sourceCode, size_t position, size_t sourceLength);
+void printToken(Buffer *buffer, const char *name);
 
 #endif // LEXER_H

@@ -1,249 +1,243 @@
 #include "lexer.h"
 
-const char* keywords[] = {
-	"i8",
-	"i16",
-	"i32",
-	"i64",
-	"u8",
-	"u16",
-	"u32",
-	"u64",
-	"f32",
-	"f64",
-};
+void tokenizeBuffer(Buffer *buffer) {
+   // start offset for non-symbol tokens
+    size_t start = 0;
 
-void printS(const char s, const char* name) {
-	printf("%s '%c'\n", name, s);
+    while (buffer->index < buffer->length) {
+
+        if (checkSkip(buffer)) {
+            buffer->index++;
+            continue;
+        }
+
+        switch (tokenHere(buffer)) {
+            case '(':
+                printToken(buffer, "OpenParen");
+                break;
+            case ')':
+                printToken(buffer, "CloseParen");
+                break;
+            case '[':
+                printToken(buffer, "OpenBracket");
+                break;	
+            case ']':
+                printToken(buffer, "CloseBracket");
+                break;
+            case '{':
+                printToken(buffer, "OpenCurly");
+                break;	
+            case '}':
+                printToken(buffer, "CloseCurly");
+                break;
+            case '<':
+                if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "LessOrEqual");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Less");
+                }
+                break;
+            case '>':
+                if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "GreaterOrEqual");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Greater");
+                }
+                break;
+            case '=':
+                if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "Compare");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Equal");
+                }
+                break;
+            case '+':
+                if (sniffToken(buffer, '+')) {
+                    printToken(buffer, "Increment");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "PlusEqual");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Plus");
+                }
+                break;
+            case '-':
+                if (sniffToken(buffer, '-')) {
+                    printToken(buffer, "Decrease");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "MinusEqual");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Minus");
+                }
+                break;
+            case '*':
+                if (sniffToken(buffer, '*')) {
+                    printToken(buffer, "DoublePointer");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "TimesEqual");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '/')) {
+                    printToken(buffer, "CloseComment");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Star");
+                }
+                break;
+            case '/':
+                if (sniffToken(buffer, '/')) {
+                    printToken(buffer, "CommentLine");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '*')) {
+                    printToken(buffer, "OpenComment");
+                    buffer->index++;
+                } else if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "DivideEqual");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Slash");
+                }
+                break;
+            case '\\':
+                if (sniffToken(buffer, '\\')) {
+                    printToken(buffer, "EscapeSlosh");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "Slosh");
+                }
+                break;
+            case '|':
+                if (sniffToken(buffer, '|')) {
+                    printToken(buffer, "LogicOr");
+                    buffer->index++;
+                } else {
+                    printToken(buffer, "BitwiseOr");
+                }
+                break;
+            case '.':
+                printToken(buffer, "Dot");
+                break;
+            case ',':
+                printToken(buffer, "Comma");
+                break;
+            case ':':
+                printToken(buffer, "Colon");
+                break;
+            case '&':
+                if (sniffToken(buffer, '&')) {
+                    printToken(buffer, "LogicAnd");
+                    buffer->index++;
+                } else
+                    printToken(buffer, "BitwiseAnd");
+                break;
+            case '%':
+                printToken(buffer, "Modulo");
+                break;
+            case '!':
+                if (sniffToken(buffer, '=')) {
+                    printToken(buffer, "NotEqual");
+                    buffer->index++;
+                } else
+                    printToken(buffer, "LogicNot");
+                break;
+            case '@':
+                printToken(buffer, "CompilerFlag");
+                break;
+            case '"':
+                printToken(buffer, "Quotations");
+                break;
+            case '\'':
+                printToken(buffer, "SingleQuote");
+                break;
+            case '_':
+                printToken(buffer, "Underscore");
+                break;
+            default:
+                if (checkNumber(buffer)) {
+
+                    start = buffer->index;
+
+                    while (checkNumber(buffer)) {
+                        if (buffer->index < buffer->length)
+                            buffer->index++;
+                        else break;
+                    }
+
+                    size_t numLen = buffer->index - start;
+                    char numVal[numLen + 1];
+
+                    snprintf(numVal, numLen + 1, "%s", &buffer->data[start]);
+
+                    printf("%04lu %s %s\n", start, numVal, "NumericLiteral");
+                    continue;
+                } else if (checkAlpha(buffer)) {
+
+                    start = buffer->index;
+
+                    // string literals need to start with an alphabetic char but can contain numeric values or _
+                    while (checkAlpha(buffer) || checkNumber(buffer) || checkToken(buffer, '_')) {
+                        if (buffer->index < buffer->length)
+                            buffer->index++;
+                        else break;
+                    }
+
+                    size_t strLen = buffer->index - start;
+                    char strVal[strLen + 1];
+
+                    snprintf(strVal, strLen + 1, "%s", &buffer->data[start]);
+
+                    printf("%04lu %s %s\n", start, strVal, "StringLiteral");
+                    continue;
+                } else {
+                    printToken(buffer, "Unknown"); 
+                }
+                break;
+        }
+        buffer->index++;
+    }
 }
 
-void parseBuffer(SourceBuffer *buffer) {
-	char currentChar = '\0';
-	
-	size_t start = 0;
-	for (buffer->i = 0; buffer->i < buffer->len; buffer->i++) {
-
-		currentChar = buffer->source[buffer->i];
-
-		if (isSkip(currentChar) == 1)
-			continue;
-
-		switch (currentChar) {
-			case '(':
-				printS(currentChar, "ParenLeft");
-				continue;
-			case ')':
-				printS(sourceCode[i], "ParenRight");
-				continue;
-			case '[':
-				printS(sourceCode[i], "BracketLeft");
-				continue;
-			case ']':
-				printS(sourceCode[i], "BracketRight");
-				continue;
-			case '{':
-				printS(sourceCode[i], "CurlyLeft");
-				continue;
-			case '}':
-				printS(sourceCode[i], "CurlyRight");
-				continue;
-			case '<': // check for EOF
-				// sniff ahead to find if we can find an expected char
-				if (sourceCode[i + 1] == '=') {
-					printf("LessOrEqual \"<=\"\n");
-					++i; // increment position because we used the next value
-				} else
-					printS(sourceCode[i], "ArrowLeft");
-				continue;
-			case '>': // check for EOF
-				if (sourceCode[i + 1] == '=') {
-					printf("MoreOrEqual \">=\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "ArrowRight");
-				continue;
-			case '=': // check for EOF
-				if (sourceCode[i + 1] == '=') {
-					printf("CompareEqual \"==\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "Assignment");
-				continue;
-			case '+': // check for EOF
-				switch (sourceCode[i + 1]) {
-					case '+':
-						printf("Increment \"++\"\n");
-						++i;
-						break;
-					case '=':
-						printf("AssignPlus \"+=\"\n");
-						++i;
-						break;
-					default:
-						printS(sourceCode[i], "Plus");
-						break;
-				}
-				continue;
-			case '-': // check for EOF
-				switch (sourceCode[i + 1]) {
-					case '-':
-						printf("Decrement \"--\"\n");
-						++i;
-						break;
-					case '=':
-						printf("AssignMinus \"-=\"\n");
-						++i;
-						break;
-					default:
-						printS(sourceCode[i], "Minus");
-						break;
-				}
-				continue;
-			case '*': // check for EOF
-				//TODO: ** double pointer, pointer to a pointer
-				if (sourceCode[i + 1] == '=') {
-					printf("AssignTimes \"*=\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "Star");
-				continue;
-			case '/': // check for EOF
-				switch (sourceCode[i + 1]) {
-					case '/':
-						printf("CommentLine \"//\"\n");
-						// for now we skip parsing the comment line
-						while (sourceCode[i] != '\n' && i < sourceLength)
-							++i;
-						break;
-					// case '*':
-						// printf("CommentBlock \"/**/\"\n");
-						// loop until you find "*/"
-						// break;
-					case '=':
-						printf("AssignDivide \"/=\"\n");
-						++i;
-						break;
-					default:
-						printS(sourceCode[i], "Slash");
-						break;
-				}
-				continue;
-			case '\\':
-				printS(sourceCode[i], "Slosh");
-				continue;
-			case '|':
-				if (sourceCode[i + 1] == '|') {
-					printf("LogicOr \"||\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "BitwiseOr");
-				continue;
-			case '.':
-				printS(sourceCode[i], "Dot");
-				continue;
-			case ',':
-				printS(sourceCode[i], "Comma");
-				continue;
-			case ':':
-				printS(sourceCode[i], "Colon");
-				continue;
-			case '&':
-				if (sourceCode[i + 1] == '&') {
-					printf("LogicAnd \"&&\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "BitwiseAnd");
-				continue;
-			case '%':
-				printS(sourceCode[i], "Modulo");
-				continue;
-			case '!':
-				if (sourceCode[i + 1] == '=') {
-					printf("NotEqual \"!=\"\n");
-					++i;
-				} else
-					printS(sourceCode[i], "LogicNot");
-				continue;
-			case '@':
-				printS(sourceCode[i], "CompFlagAt");
-				continue;
-			case '\"':
-				printS(sourceCode[i], "String");
-				// check for \" and skip it. if the " is prefixed by an escape, it's not a valid string closing
-				++i; // eat " and move to the first char 
-				while(sourceCode[i] != '"' && i < sourceLength) {
-					++i;
-				}
-				continue;
-			case '\'':
-				printS(sourceCode[i], "Char");
-				++i;
-				while(sourceCode[i] != '\'' && i < sourceLength) {
-					++i;
-				}
-				// Error, expected '
-				continue;
-			case '_':
-			// this is not a case that could happen outside of a variable name or function name
-			// consider removing
-				printS(sourceCode[i], "UnderScore");
-				continue;
-			default:
-				if (isNumber(currentChar) == 1) {
-					start = i;
-					// instead of checking if the next char is a number, create an expect rule
-					// if it starts with a number, it's a numeric value so expect { 0..9, e, E, - }
-					while (isNumber(sourceCode[i]) == 1 && i < sourceLength)
-						++i;
-					size_t numLen = i - start;
-
-					char numVal[numLen + 1];
-
-					strncpy(numVal, &sourceCode[start], numLen);
-					numVal[numLen] = '\0';
-
-					printf("NumericLiteral %s\n", numVal);
-					--i; // ??
-					continue;
-				} else if (isAlpha(currentChar) == 1) {
-					start = i;
-					while (isAlpha(sourceCode[i]) == 1 || isNumber(sourceCode[i]) == 1 || sourceCode[i] == '_') {
-						if (i < sourceLength) {
-							++i;
-						} else break;
-					}
-					size_t strLen = i - start;
-
-					char strVal[strLen + 1];
-
-					strncpy(strVal, &sourceCode[start], strLen);
-					strVal[strLen] = '\0';
-
-					printf("Identifier %s\n", strVal);
-					--i; // ??
-					continue;
-				} else {
-					printS(currentChar, "Unknown");
-					continue;
-				}
-		}
-	}
+void printToken(Buffer *buffer, const char *name) {
+    printf("%04lu %c %s\n", buffer->index, tokenHere(buffer), name);
 }
 
-int isSkip(const char c) {
-	if ((c ==  ' ') || (c == '\n') || (c == '\t') || (c == '\r'))
-		return 1;
-	return 0;
+char tokenHere(Buffer *buffer) {
+    return buffer->data[buffer->index];
 }
 
-int isNumber(const char c) {
-	if ((c >= '0') && (c <= '9'))
-		return 1;
-	return 0;
+char tokenNext(Buffer *buffer) {
+    if (buffer->index++ < buffer->length) return tokenHere(buffer);
+    return '\0';
 }
 
-int isAlpha(const char c) {
-	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
-		return 1;
-	return 0;
+int sniffToken(Buffer *buffer, const char c) {
+    size_t i = buffer->index + 1;
+    if (i < buffer->length)
+        return buffer->data[i] == c;
+    return 0;
+}
+
+int checkToken(Buffer *buffer, const char c) {
+    return buffer->data[buffer->index] == c;
+}
+
+int checkNumber(Buffer *buffer) {
+    const char c = buffer->data[buffer->index];
+    return ((c >= '0') && (c <= '9'));
+}
+
+int checkSkip(Buffer *buffer) {
+    const char c = buffer->data[buffer->index];
+    return ((c == ' ') || (c == '\n') || (c == '\t') || (c == '\r'));
+}
+
+int checkAlpha(Buffer *buffer) {
+    const char c = buffer->data[buffer->index];
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
 }

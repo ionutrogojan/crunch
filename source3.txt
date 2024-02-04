@@ -1,57 +1,221 @@
 @import "std/io"
 
-void printS(const char c, const string name) {
-	printLn("%s '%c'", name, c)
+@define BUFFER_SIZE 8192 // 8KB buffer size
+
+struct Buffer {
+	usize index,
+	usize length,
+	char data[BUFFER_SIZE]
 }
 
-void parseBuffer(const string* sourceCode) {
-	char currentChar = '\0'
+void Buffer.printToken(const string name) {
+	printLn("%04lu %c %s", self.index, self.tokenHere(), name)
+}
 
+char Buffer.tokenHere(void) {
+	return self.data[self.index]
+}
+
+char Buffer.tokenNext(void) {
+	if (self.index++ < buffer.length) return self.tokenHere()
+	return '\0'
+}
+
+bool Buffer.sniffToken(const char c) {
+	usize i = self.index + 1
+	if (i < self.length) return self.data[i] == c
+	return false
+}
+
+bool Buffer.checkToken(const char c) {
+	return self.data[self.index] == c
+}
+
+bool Buffer.checkNumber(void) {
+	const char c = self.data[self.index]
+	return ((c >= '0') && (c <= '9'))
+}
+
+bool Buffer.checkSkip(void) {
+	const char c = self.data[self.index]
+	return ((c == ' ') || (c == '\n') || (c == '\t') || (c == '\r'))
+}
+
+bool Buffer.checkAlpha(void) {
+	const char c = self.data[self.index]
+	return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+}
+
+void tokenizeBuffer(Buffer *buffer) {
+	// start offset for non-symbol tokens
 	usize start = 0
 
-	for (usize i = 0; i < sourceCode.len; ++i) {
-		currentChar = sourceCode[i]
+	while (buffer.index < buffer.length) {
 
-		if (isSkip(currentChar))
+		if (buffer.checkSkip()) {
+			buffer.index++
 			continue
-
-		match (currentChar) {
-			'(':
-				printS(currentChar, "ParenLeft")
-				continue
-			')':
-				printS(currentChar, "ParenRight")
-				continue
-			'[':
-				printS(currentChar, "BracketLeft")
-				continue
-			']':
-				printS(currentChar, "BracketRight")
-				continue
-			'{':
-				printS(currentChar, "CurlyLeft")
-				continue
-			'}':
-				printS(currentChar, "CurlyRight")
-				continue
 		}
+
+		match (buffer.tokenHere()) {
+			'(':
+				buffer.printToken("OpenParen")
+				break
+			')':
+				buffer.printToken("CloseParen")
+				break
+			'[':
+				buffer.printToken("OpenBracket")
+				break
+			']':
+				buffer.printToken("CloseBracket")
+				break
+			'{':
+				buffer.printToken("OpenCurly")
+				break
+			'}':
+				buffer.printToken("CloseCurly")
+				break
+			'<':
+				if (buffer.sniffToken('=')) {
+					buffer.printToken("LessOfEqual")
+					buffer.index++
+				} else buffer.printToken("Less")
+				break
+			'>':
+				if (buffer.sniffToken('=')) {
+					buffer.printToken("GreaterOrEqual")
+					buffer.index++
+				} else buffer.printToken("Greater")
+				break
+			'=':
+                if (buffer.sniffToken('=')) {
+                    buffer.printToken("Compare")
+                    buffer.index++
+                } else buffer.printToken("Equal")
+                break
+            '+':
+                if (buffer.sniffToken('+')) {
+                    buffer.printToken("Increment")
+                    buffer.index++
+                } elif (buffer.sniffToken('=')) {
+                    buffer.printToken("PlusEqual")
+                    buffer.index++
+                } else buffer.printToken("Plus")
+                break
+            '-':
+                if (buffer.sniffToken('-')) {
+                    buffer.printToken("Decrease")
+                    buffer.index++
+                } elif (buffer.sniffToken('=')) {
+                    buffer.printToken("MinusEqual")
+                    buffer.index++
+                } else buffer.printToken("Minus")
+                break
+            '*':
+                if (buffer.sniffToken('*')) {
+                    buffer.printToken("DoublePointer")
+                    buffer.index++
+                } elif (buffer.sniffToken('=')) {
+                    buffer.printToken("TimesEqual")
+                    buffer.index++
+                } elif (buffer.sniffToken('/')) {
+                    buffer.printToken("CloseComment")
+                    buffer.index++
+                } else buffer.printToken("Star")
+                break
+            '/':
+                if (buffer.sniffToken('/')) {
+                    buffer.printToken("CommentLine")
+                    buffer.index++
+                } elif (buffer.sniffToken('*')) {
+                    buffer.printToken("OpenComment")
+                    buffer.index++
+                } elif (buffer.sniffToken('=')) {
+                    buffer.printToken("DivideEqual")
+                    buffer.index++
+                } else buffer.printToken("Slash")
+                break
+            '\\':
+                if (buffer.sniffToken('\\')) {
+                    buffer.printToken("EscapeSlosh")
+                    buffer.index++
+                } else buffer.printToken("Slosh")
+                break
+            '|':
+                if (buffer.sniffToken('|')) {
+                    buffer.printToken("LogicOr")
+                    buffer.index++
+                } else buffer.printToken("BitwiseOr")
+                break
+            '.':
+                buffer.printToken("Dot")
+                break
+            ',':
+                buffer.printToken("Comma")
+                break
+            ':':
+                buffer.printToken("Colon")
+                break
+            '&':
+                if (buffer.sniffToken('&')) {
+                    buffer.printToken("LogicAnd")
+                    buffer.index++
+                } else buffer.printToken("BitwiseAnd")
+                break
+            '%':
+                buffer.printToken("Modulo")
+                break
+            '!':
+                if (buffer.sniffToken('=')) {
+                    buffer.printToken("NotEqual")
+                    buffer.index++
+                } else buffer.printToken("LogicNot")
+                break
+            '@':
+                buffer.printToken("CompilerFlag")
+                break
+            '"':
+                buffer.printToken("Quotations")
+                break
+            '\'':
+                buffer.printToken("SingleQuote")
+                break
+            '_':
+                buffer.printToken("Underscore")
+                break
+		} else {
+			if (buffer.checkNumber()) {
+
+				start = buffer.index
+
+				while (buffer.checkNumber()) {
+					if (buffer.index < buffer.length)
+						buffer.index++
+					else break
+				}
+				
+				string numVal = buffer.data.copy(start, numLen)				
+				printLn("%04lu %s %s", start, numVal, "NumericLiteral")
+				
+				continue
+			} elif (buffer.checkAlpha()) {
+				
+				start = buffer.index
+				
+				while (buffer.checkAlpha() || buffer.checkNumber() || buffer.checkToken('_')) {
+					if (buffer.index < buffer.length)
+						buffer.index++
+					else break
+				}
+				
+				string strVal = buffer.data.copy(start, buffer.index - start)
+				printLn("%04lu %s %s", start, srtVal, "StringLiteral")
+				
+				continue
+			} else buffer.printToken("Unknown")
+			break
+		}
+		buffer.index++
 	}
-}
-
-bool isSkip(const char c) {
-	if ((c ==  ' ') || (c == '\n') || (c == '\t') || (c == '\r'))
-		return true
-	return false
-}
-
-bool isNumber(const char c) {
-	if ((c >= '0') && (c <= '9'))
-		return true
-	return false
-}
-
-bool isAlpha(const char c) {
-	if ((c >= 'a'&& c <= 'z') || (c >= 'A'&& c <= 'Z'))
-		return true
-	return false
 }
