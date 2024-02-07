@@ -1,5 +1,49 @@
 #include "lexer.h"
 
+const char *keywords[] = {
+    // Numeric Literals
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "uint",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "int",
+    "f32",
+    "f64",
+    "float",
+    // 
+    "byte",
+    "bool",
+    "nil",
+    "void",
+    //
+    "self",
+    "return",
+    "continue",
+    "break",
+    "const",
+    "enum",
+    "struct",
+    // Builtin Function
+    "if",
+    "else",
+    "elif",
+    "for",
+    "while",
+    "match",
+    // Compiler Flags
+    /*
+    "define",
+    "import",
+    "syscall"
+    */
+    NULL
+};
+
 void tokenizeBuffer(Buffer *buffer) {
    // start offset for non-symbol tokens
     size_t start = 0;
@@ -162,7 +206,7 @@ void tokenizeBuffer(Buffer *buffer) {
                 if (checkNumber(buffer)) {
 
                     start = buffer->index;
-
+                    // this does not support floats, scientific notation, or hex
                     while (checkNumber(buffer)) {
                         if (buffer->index < buffer->length)
                             buffer->index++;
@@ -240,4 +284,22 @@ int checkSkip(Buffer *buffer) {
 int checkAlpha(Buffer *buffer) {
     const char c = buffer->data[buffer->index];
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+}
+
+int checkKeyword(const char *keywords[], const char *name) {
+    int same = -1;
+    for (int i = 0; keywords[i] != NULL; i++) {
+        const char *keyword = keywords[i];
+        const char *namePtr = name;
+        while (*keyword == *namePtr && *keyword && *namePtr) {
+            keyword++;
+            namePtr++;
+
+            if (*keyword == '\0' && *namePtr == '\0') {
+                same = i;
+                break;
+            }
+        }
+    }
+    return same;
 }

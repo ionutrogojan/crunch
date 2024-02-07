@@ -5,18 +5,18 @@
 struct Buffer {
 	usize index,
 	usize length,
-	char data[BUFFER_SIZE]
+	byte data[BUFFER_SIZE]
 }
 
 void Buffer.printToken(const string name) {
 	printLn("%04lu %c %s", self.index, self.tokenHere(), name)
 }
 
-char Buffer.tokenHere(void) {
+byte Buffer.tokenHere(void) {
 	return self.data[self.index]
 }
 
-char Buffer.tokenNext(void) {
+byte Buffer.tokenNext(void) {
 	if (self.index++ < buffer.length) return self.tokenHere()
 	return '\0'
 }

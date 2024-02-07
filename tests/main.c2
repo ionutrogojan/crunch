@@ -2,9 +2,9 @@
 
 @define BUFFER_SIZE 8192 // 8KB buffer size
 
-i8 main(string args[]) {
-	string src = args[1]
-	FILE *fp
+isize main(usize argc, byte *args[]) {
+	String src = args[1]
+	File *fp
 
 	// "rb" for reading in binary mode
 	if ((fp = fOpen(src, "rb")) == nil) {
@@ -12,7 +12,7 @@ i8 main(string args[]) {
 		return 1
 	}
 
-	Buffer buffer;
+	Buffer buffer
 	// Read the file 8KB at a time until the end
 	while ((buffer.len = fRead(buffer, 1, BUFFER_SIZE, src)) > 0) {
 		parseBuffer(buffer)

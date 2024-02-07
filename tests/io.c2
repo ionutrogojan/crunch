@@ -1,0 +1,23 @@
+struct File {
+	const str name,      // base name of the file
+	i8 flags,            // (O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, ..)
+	i32 mode,            // (read, write, append)
+	byte *buffer,        // 
+	usize size,          // size of the buffer
+	usize fd,            // file descriptor
+	
+}
+
+File* fOpen(String filename, String mode) {
+    usize fd = open(0x02, filename.data, O_READONLY, mode)
+    return { filename, O_READONLY, mode, NULL, 0, fd }
+}
+
+@syscall usize open(0x02, const char *filename, i64 flags, umode_t mode)
+
+read     0x00    unsigned int fd         char *buf          size_t count
+write    0x01    unsigned int fd         const char *buf    size_t count
+open     0x02    const char *filename    int flags          umode_t mode
+close    0x03    unsigned int fd
+
+// https://man7.org/linux/man-pages/man2/open.2.html
