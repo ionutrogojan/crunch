@@ -14,12 +14,12 @@ typedef enum {
     TOKEN_BRACKET_CLOSE,          //    ]
     TOKEN_CURLY_OPEN,             //    {
     TOKEN_CURLY_CLOSE,            //    }
-    TOKEN_ARROW_LEFT,             //    <
+    TOKEN_ARROW_OPEN,             //    <
     TOKEN_LESS_EQUAL,             //    <=
-    TOKEN_ARROW_RIGHT,            //    >
+    TOKEN_ARROW_CLOSE,            //    >
     TOKEN_GREATER_EQUAL,          //    >=
     TOKEN_EQUAL,                  //    =
-    TOKEN_ASSIGN,                 //    ==
+    TOKEN_COMPARE,                //    ==
     TOKEN_PLUS,                   //    +
     TOKEN_INCREMENT,              //    ++
     TOKEN_PLUS_EQUAL,             //    +=
@@ -53,6 +53,7 @@ typedef enum {
     // KEYWORDS
     TOKEN_IDENTIFIER,             //    hello
     TOKEN_KEYWORD,                //    int
+    TOKEN_NUMBER,                 //    23
     TOKEN_UNKNOWN,                //    ?
 } TokenKind;
 
@@ -68,16 +69,17 @@ typedef struct {
     char data[BUFFER_SIZE];
 } Buffer;
 
-void tokenizeBuffer(Buffer *buffer);
-char tokenNext(Buffer *buffer);
-char tokenHere(Buffer *buffer); 
+Token tokenizeBuffer(Buffer *buffer);
+
+char tokenHere(Buffer *buffer);
 
 int sniffToken(Buffer *buffer, const char c);
-
 int checkToken(Buffer *buffer, const char c);
+
 int checkNumber(Buffer *buffer);
 int checkSkip(Buffer *buffer);
 int checkAlpha(Buffer *buffer);
+int checkKeyword(const char *keywords[], const char *name);
 
 void printToken(Buffer *buffer, const char *name);
 

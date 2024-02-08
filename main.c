@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "lib/lexer.h"
+#include "lib/parser.h"
 
 int main(int argc, char **argv) {
     // 0 = ./main , 1 = source , count = 2
@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
     Buffer fb = { .index = 0 };
 
     while ((fb.length = fread(fb.data, 1, BUFFER_SIZE, fp)) > 0)
-        tokenizeBuffer(&fb);
+		parseBuffer(&fb);
+        // tokenizeBuffer(&fb);
 
     fclose(fp);
     return 0;

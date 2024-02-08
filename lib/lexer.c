@@ -44,163 +44,223 @@ const char *keywords[] = {
     NULL
 };
 
-void tokenizeBuffer(Buffer *buffer) {
+Token tokenizeBuffer(Buffer *buffer) {
    // start offset for non-symbol tokens
     size_t start = 0;
+    Token token = { .value = &buffer->data[buffer->index], .len = 1 };
 
-    while (buffer->index < buffer->length) {
+    if (buffer->index < buffer->length) {
 
         if (checkSkip(buffer)) {
             buffer->index++;
-            continue;
+            return tokenizeBuffer(buffer);
         }
 
         switch (tokenHere(buffer)) {
             case '(':
-                printToken(buffer, "OpenParen");
+                // printToken(buffer, "OpenParen");
+                token.kind = TOKEN_PAREN_OPEN;
                 break;
             case ')':
-                printToken(buffer, "CloseParen");
+                // printToken(buffer, "CloseParen");
+                token.kind = TOKEN_PAREN_CLOSE;
                 break;
             case '[':
-                printToken(buffer, "OpenBracket");
+                // printToken(buffer, "OpenBracket");
+                token.kind = TOKEN_BRACKET_OPEN;
                 break;	
             case ']':
-                printToken(buffer, "CloseBracket");
+                // printToken(buffer, "CloseBracket");
+                token.kind = TOKEN_BRACKET_CLOSE;
                 break;
             case '{':
-                printToken(buffer, "OpenCurly");
+                // printToken(buffer, "OpenCurly");
+                token.kind = TOKEN_CURLY_OPEN;
                 break;	
             case '}':
-                printToken(buffer, "CloseCurly");
+                // printToken(buffer, "CloseCurly");
+                token.kind = TOKEN_CURLY_CLOSE;
                 break;
             case '<':
                 if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "LessOrEqual");
+                    // printToken(buffer, "LessOrEqual");
+                    token.kind = TOKEN_LESS_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Less");
+                    // printToken(buffer, "Less");
+                    token.kind = TOKEN_ARROW_OPEN;
                 }
                 break;
             case '>':
                 if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "GreaterOrEqual");
+                    // printToken(buffer, "GreaterOrEqual");
+                    token.kind = TOKEN_GREATER_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Greater");
+                    // printToken(buffer, "Greater");
+                    token.kind = TOKEN_ARROW_CLOSE;
                 }
                 break;
             case '=':
                 if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "Compare");
+                    // printToken(buffer, "Compare");
+                    token.kind = TOKEN_COMPARE;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Equal");
+                    // printToken(buffer, "Equal");
+                    token.kind = TOKEN_EQUAL;
                 }
                 break;
             case '+':
                 if (sniffToken(buffer, '+')) {
-                    printToken(buffer, "Increment");
+                    // printToken(buffer, "Increment");
+                    token.kind = TOKEN_INCREMENT;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "PlusEqual");
+                    // printToken(buffer, "PlusEqual");
+                    token.kind = TOKEN_PLUS_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Plus");
+                    // printToken(buffer, "Plus");
+                    token.kind = TOKEN_PLUS;
                 }
                 break;
             case '-':
                 if (sniffToken(buffer, '-')) {
-                    printToken(buffer, "Decrease");
+                    // printToken(buffer, "Decrease");
+                    token.kind = TOKEN_DECREASE;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "MinusEqual");
+                    // printToken(buffer, "MinusEqual");
+                    token.kind = TOKEN_MINUS_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Minus");
+                    // printToken(buffer, "Minus");
+                    token.kind = TOKEN_MINUS;
                 }
                 break;
             case '*':
                 if (sniffToken(buffer, '*')) {
-                    printToken(buffer, "DoublePointer");
+                    // printToken(buffer, "DoublePointer");
+                    token.kind = TOKEN_DOUBLE_POINTER;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "TimesEqual");
+                    // printToken(buffer, "TimesEqual");
+                    token.kind = TOKEN_TIMES_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '/')) {
-                    printToken(buffer, "CloseComment");
+                    // printToken(buffer, "CloseComment");
+                    token.kind = TOKEN_TIMES_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Star");
+                    // printToken(buffer, "Star");
+                    token.kind = TOKEN_STAR;
                 }
                 break;
             case '/':
                 if (sniffToken(buffer, '/')) {
-                    printToken(buffer, "CommentLine");
+                    // printToken(buffer, "CommentLine");
+                    token.kind = TOKEN_COMMENT_LINE;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '*')) {
-                    printToken(buffer, "OpenComment");
+                    // printToken(buffer, "OpenComment");
+                    token.kind = TOKEN_COMMENT_BLOCK_OPEN;
+                    token.len = 2;
                     buffer->index++;
                 } else if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "DivideEqual");
+                    // printToken(buffer, "DivideEqual");
+                    token.kind = TOKEN_DIVIDE_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Slash");
+                    // printToken(buffer, "Slash");
+                    token.kind = TOKEN_SLASH;
                 }
                 break;
             case '\\':
                 if (sniffToken(buffer, '\\')) {
-                    printToken(buffer, "EscapeSlosh");
+                    // printToken(buffer, "EscapeSlosh");
+                    token.kind = TOKEN_ESCAPE_SLOSH;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "Slosh");
+                    // printToken(buffer, "Slosh");
+                    token.kind = TOKEN_SLOSH;
                 }
                 break;
             case '|':
                 if (sniffToken(buffer, '|')) {
-                    printToken(buffer, "LogicOr");
+                    // printToken(buffer, "LogicOr");
+                    token.kind = TOKEN_LOGIC_OR;
+                    token.len = 2;
                     buffer->index++;
                 } else {
-                    printToken(buffer, "BitwiseOr");
+                    // printToken(buffer, "BitwiseOr");
+                    token.kind = TOKEN_BITWISE_OR;
                 }
                 break;
             case '.':
-                printToken(buffer, "Dot");
+                // printToken(buffer, "Dot");
+                token.kind = TOKEN_DOT;
                 break;
             case ',':
-                printToken(buffer, "Comma");
+                // printToken(buffer, "Comma");
+                token.kind = TOKEN_COMMA;
                 break;
             case ':':
-                printToken(buffer, "Colon");
+                // printToken(buffer, "Colon");
+                token.kind = TOKEN_COLON;
                 break;
             case '&':
                 if (sniffToken(buffer, '&')) {
-                    printToken(buffer, "LogicAnd");
+                    // printToken(buffer, "LogicAnd");
+                    token.kind = TOKEN_LOGIC_AND;
+                    token.len = 2;
                     buffer->index++;
                 } else
-                    printToken(buffer, "BitwiseAnd");
+                    // printToken(buffer, "BitwiseAnd");
+                    token.kind = TOKEN_BITWISE_AND;
                 break;
             case '%':
-                printToken(buffer, "Modulo");
+                // printToken(buffer, "Modulo");
+                token.kind = TOKEN_MODULO;
                 break;
             case '!':
                 if (sniffToken(buffer, '=')) {
-                    printToken(buffer, "NotEqual");
+                    // printToken(buffer, "NotEqual");
+                    token.kind = TOKEN_NOT_EQUAL;
+                    token.len = 2;
                     buffer->index++;
                 } else
-                    printToken(buffer, "LogicNot");
+                    // printToken(buffer, "LogicNot");
+                    token.kind = TOKEN_BANG;
                 break;
             case '@':
-                printToken(buffer, "CompilerFlag");
+                // printToken(buffer, "CompilerFlag");
+                token.kind = TOKEN_COMPILER_FLAG;
                 break;
             case '"':
-                printToken(buffer, "Quotations");
+                // printToken(buffer, "Quotations");
+                token.kind = TOKEN_QUOTE;
                 break;
             case '\'':
-                printToken(buffer, "SingleQuote");
+                // printToken(buffer, "SingleQuote");
+                token.kind = TOKEN_QUOTE_SINGLE;
                 break;
             case '_':
-                printToken(buffer, "Underscore");
+                // printToken(buffer, "Underscore");
+                token.kind = TOKEN_UNDERSCORE;
                 break;
             default:
                 if (checkNumber(buffer)) {
@@ -218,8 +278,10 @@ void tokenizeBuffer(Buffer *buffer) {
 
                     snprintf(numVal, numLen + 1, "%s", &buffer->data[start]);
 
-                    printf("%04lu %s %s\n", start, numVal, "NumericLiteral");
-                    continue;
+                    // printf("%04lu %s %s\n", start, numVal, "NumericLiteral");
+                    // TOKEN_NUMERIC_VALUE
+                    token.kind = TOKEN_NUMBER;
+                    token.len = numLen;
                 } else if (checkAlpha(buffer)) {
 
                     start = buffer->index;
@@ -236,15 +298,24 @@ void tokenizeBuffer(Buffer *buffer) {
 
                     snprintf(strVal, strLen + 1, "%s", &buffer->data[start]);
 
-                    printf("%04lu %s %s\n", start, strVal, "StringLiteral");
-                    continue;
+                    // printf("%04lu %s %s\n", start, strVal, "StringLiteral");
+                    if (checkKeyword(keywords, strVal) != -1)
+                        token.kind = TOKEN_KEYWORD;
+                    else token.kind = TOKEN_IDENTIFIER;
+                    token.len = strLen;
                 } else {
-                    printToken(buffer, "Unknown"); 
+                    // printToken(buffer, "Unknown"); 
+                    token.kind = TOKEN_UNKNOWN;
                 }
                 break;
         }
         buffer->index++;
+        return token;
     }
+    token.kind = TOKEN_EOF;
+    token.value = NULL;
+    token.len = 0;
+    return token;
 }
 
 void printToken(Buffer *buffer, const char *name) {
